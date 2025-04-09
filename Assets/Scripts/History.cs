@@ -5,11 +5,12 @@ using UnityEngine;
 
 namespace ColorBath
 {
+    [System.Serializable]
     public class History
     {
-        DateTime date;
-        string theme;
-        Discovery[] discoveries;
-        string review;
+        public DateTime Date;
+        public string Theme;
+        public Discovery[] Discoveries;
+        public string Review;
     }
 }
