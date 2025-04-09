@@ -13,7 +13,6 @@ namespace ColorBath
     public class UsageHistoryManager
     {
         public string[] RecentThemes { get; } = new string[0];
-        //public History[] Histories { get; }
         private string _path;
         private int _recentlyViewedLogNum = 0;
         private static int NUMBER_OF_FILES = 50;
@@ -30,9 +29,36 @@ namespace ColorBath
         private bool isLoggedInToday()
         {
             DateTime today = DateTime.Today;
-            string todaysFileName = Date2FileName(today, "history", ".json");
+            string todaysFileName = Date2JsonFileName(today, "history");
             string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
             return (files.Length > 0) ? true : false; 
+        }
+
+        public History? GetLatestHistory()
+        {
+            string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
+            string[] files = Directory.GetFiles(historyPath, "*.json");
+            if (files.Length == 0)
+            {
+                Debug.Log("HistoryフォルダにJSONファイルがありません");
+                return null;
+            }
+
+            var file = files
+            .Select(file => new
+            {
+                FileName = file,
+                Date = JsonFileName2Date(Path.GetFileName(file))
+            })
+            .Where(file => file.Date.HasValue)
+            .OrderByDescending(file => file.Date)
+            .FirstOrDefault();
+
+
+            if (file == null) { return null; };
+            string path = file.FileName;
+
+            return GetHistory(path);
         }
 
         public string[] LoadRecentThemes(string path)
@@ -49,7 +75,7 @@ namespace ColorBath
             .Select(file => new
             {
                 FileName = file,
-                Date = FileName2Date(Path.GetFileName(file), ".json")
+                Date = JsonFileName2Date(Path.GetFileName(file))
             })
             .Where(file => file.Date.HasValue)
             .OrderByDescending(file => file.Date)
@@ -83,30 +109,66 @@ namespace ColorBath
             }
         }
 
-        public void SaveDiscovery(History history)
+        public void SaveDiscovery(Discovery discovery)
         {
+            string todaysPath = MakeTodaysHistoryPath();
+            History ? history = GetHistory(todaysPath);
+            if (history != null)
+            {
+                List<Discovery> discoveryList = history.Discoveries?.ToList() ?? new List<Discovery>();
+                discoveryList.Add(discovery);
+                history.Discoveries = discoveryList.ToArray();
 
+                SaveHistory(todaysPath, history);
+            }
         }
 
-        public void DeleteDiscovery()
+        public void DeleteDiscovery(History target, int discoveryNum)
         {
+            string fileName = Date2JsonFileName(target.Date, "history");
+            string path = Path.Combine(Application.persistentDataPath, fileName);
 
+            History? history = GetHistory(path);
+            if (history != null)
+            {
+                List<Discovery> discoveryList = history.Discoveries?.ToList() ?? new List<Discovery>();
+                discoveryList.RemoveAt(discoveryNum - 1);
+                history.Discoveries = discoveryList.ToArray();
+
+                SaveHistory(path, history);
+            }
         }
 
-        public History GetLatestHistry()
+        public void SaveReview(string review, DateTime dateTime)
         {
-            History history = new History();
-            return history;
+            string fileName = Date2JsonFileName(dateTime, "history");
+            string path = Path.Combine(Application.persistentDataPath, fileName);
+
+            History? history = GetHistory(path);
+            if (history != null)
+            {
+                history.Review = review;
+                SaveHistory(path, history);
+            }
         }
 
-        public void SaveReview()
+        public string MakeTodaysHistoryPath()
         {
-
+            DateTime today = DateTime.Today;
+            string todaysFileName = Date2JsonFileName(today, "history");
+            string path = Path.Combine(Application.persistentDataPath, todaysFileName);
+            return path;
         }
 
-        private DateTime? FileName2Date(string fileName, string extension)
+        private static void SaveHistory(string filePath, History history)
         {
-            var datePart = fileName.Substring(fileName.LastIndexOf('_') + 1).Replace(extension, "");
+            string json = JsonUtility.ToJson(history, true);
+            File.WriteAllText(filePath, json);
+        }
+
+        private DateTime? JsonFileName2Date(string fileName)
+        {
+            var datePart = fileName.Substring(fileName.LastIndexOf('_') + 1).Replace(".json", "");
 
             if (DateTime.TryParse(datePart, out DateTime date))
             {
@@ -115,10 +177,10 @@ namespace ColorBath
             return null;
         }
 
-        private string Date2FileName(DateTime date, string prefix, string extension)
+        private string Date2JsonFileName(DateTime date, string prefix)
         {
             string date_str= date.ToString("yyyy_MM_dd");
-            return $"{prefix}_{date_str}{extension}";
+            return $"{prefix}_{date_str}.json";
         }
     }
 }
