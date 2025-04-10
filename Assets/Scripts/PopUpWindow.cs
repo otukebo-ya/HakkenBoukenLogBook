@@ -2,35 +2,44 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
-namespace ColorBath{
+namespace ColorBath
+{
     public class PopUpWindow : MonoBehaviour
     {
-        [SerializeField] private TMPro.TMP_Text _title;
-        [SerializeField] private TMPro.TMP_Text _mainText;
-        [SerializeField] private TMPro.TMP_Text _errorText;
-        private GameObject _textForm;
+        private TMPro.TMP_Text _title;
+        private TMPro.TMP_Text _mainText;
+        private TMPro.TMP_Text _errorText;
+        private InputField _textForm;
 
         // Start is called before the first frame update
         void Start()
         {
+            _title = transform.Find("Title").GetComponent<TMP_Text>();
+            _mainText = transform.Find("MainText").GetComponent<TMP_Text>();
+            _errorText = transform.Find("ErrorText").GetComponent<TMP_Text>();
+            _textForm = transform.Find("InputFieldInWindow").gameObject.GetComponent<InputField>();
+        }
+
+        public void SetTitleText(string title) 
+        {
+            _title.text = title; 
+        }
+
+        public void SetMainText(string text) 
+        {
+            _mainText.text = text; 
+        }
         
+        public void SetErrorText(string text) 
+        {
+            _errorText.text = text; 
         }
 
-        // Update is called once per frame
-        void Update()
+        public string GetTextFormInput()
         {
-        
-        }
-
-        public void PopUp(string title, string mainText, string errorText="")
-        {
-
-        }
-
-        public void Close()
-        {
-
+            return _textForm.text; 
         }
     }
 }
