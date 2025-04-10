@@ -148,14 +148,34 @@ float2 rotate_fill(float2 fpos) {
 // @param uv the uv coords from -0.5 to 0.5
 fixed4 fill(float2 uv) {
     float2 fpos = float2(uv.x * _XScale, uv.y * _YScale);
+
+    /********************************/
+    #if UNITY_COLORSPACE_GAMMA
+        fixed4 fillColor = _FillColor;
+        fixed4 fillColor2 = _FillColor2;
+        fixed4 outlineColor = _OutlineColor;
+    #else
+        fixed4 fillColor = fixed4(GammaToLinearSpace(_FillColor.rgb), _FillColor.a);
+        fixed4 fillColor2 = fixed4(GammaToLinearSpace(_FillColor2.rgb), _FillColor2.a);
+        fixed4 outlineColor = fixed4(GammaToLinearSpace(_OutlineColor.rgb), _OutlineColor.a);
+    #endif
+    /********************************/
     
     #if FILL_NONE
         return fixed4(0, 0, 0, 0);
     #elif FILL_OUTLINE_COLOR
-        return _OutlineColor;
+    
+        /********************************/
+        return outlineColor;
+        /********************************/
+
     #elif FILL_SOLID_COLOR
         // fill with the fill color
-        return _FillColor;
+
+        /********************************/
+        return fillColor;
+        /********************************/
+
     #elif FILL_GRADIENT
         // gradient
         // todo - simplify and try to remove conditionals
@@ -190,11 +210,20 @@ fixed4 fill(float2 uv) {
             gmin = gmax * _GradientStart;
             current = length(fpos);
         }
+
+        /********************************/
         if (current < gmin)
-            return _FillColor;
+            return fillColor;
         if (gmax == gmin)
-            return _FillColor2;
-        return lerp(_FillColor, _FillColor2, (current - gmin) / (gmax - gmin));
+            return fillColor2;
+        #if UNITY_COLORSPACE_GAMMA
+            return lerp(fillColor, fillColor2, (current - gmin) / (gmax - gmin));
+        #else
+            fixed4 color = lerp(_FillColor, _FillColor2, (current - gmin) / (gmax - gmin));
+            return fixed4(GammaToLinearSpace(color.rgb), color.a);
+        #endif
+        /********************************/
+
     #elif FILL_GRID
         // grid - background is _FillColor, lines are _FillColor2
         fpos = rotate_fill(fpos);
@@ -210,7 +239,11 @@ fixed4 fill(float2 uv) {
         float py = abs(frac(fpos.y / _GridSize) * _GridSize * 2 - _GridSize);
         float mixx = smoothstep(_GridSize - _LineSize - edge, _GridSize - _LineSize, px);
         float mixy = smoothstep(_GridSize - _LineSize - edge, _GridSize - _LineSize, py);
-        return lerp(_FillColor, _FillColor2, max(mixx, mixy));
+
+        /********************************/
+        return lerp(fillColor, fillColor2, max(mixx, mixy));
+        /********************************/
+
     #elif FILL_CHECKERBOARD
         // checkerboard
         fpos = rotate_fill(fpos);
@@ -220,8 +253,12 @@ fixed4 fill(float2 uv) {
         float2 p = frac(fpos / _GridSize);
         float2 mix = smoothstep(0, edge / _GridSize, p);
         float tile = abs(floor(fpos.y / _GridSize) + floor(fpos.x / _GridSize)) % 2;
-        fixed4 color1 = tile * _FillColor + (1 - tile) * _FillColor2;
-        fixed4 color2 = tile * _FillColor2 + (1 - tile) * _FillColor;
+
+        /********************************/
+        fixed4 color1 = tile * fillColor + (1 - tile) * fillColor2;
+        fixed4 color2 = tile * fillColor2 + (1 - tile) * fillColor;
+        /********************************/
+
         return lerp(color1, color2, min(mix.x, mix.y));
     #elif FILL_STRIPES
         // stripes
@@ -231,7 +268,11 @@ fixed4 fill(float2 uv) {
         float edge = min(_PixelSize * 2, _GridSize);
         float p = abs(frac(fpos.x / _GridSize) * _GridSize * 2 - _GridSize);
         float mix = smoothstep(_GridSize - _LineSize - edge, _GridSize - _LineSize, p);
-        return lerp(_FillColor, _FillColor2, mix);
+
+        /********************************/
+        return lerp(fillColor, fillColor2, mix);
+        /********************************/
+
     #elif FILL_TEXTURE
         // texture
         fpos = rotate_fill(fpos);
@@ -258,12 +299,19 @@ float blur(float edge1, float edge2, float amount) {
 
 fixed4 outline_fill_blend(float dist, fixed4 fill_color, fixed4 outline_color,
         float outer_blur, float outline, float inner_blur) {
+    
+    /********************************/
+    #if !UNITY_COLORSPACE_GAMMA
+    outline_color.rgb = GammaToLinearSpace(outline_color.rgb);
+    #endif
+    /********************************/
+
     float mix = blur(outline, inner_blur, dist);
     #if FILL_NONE
-        fixed4 color = outline_color;
-        color.a *= (1 - mix);
+    fixed4 color = outline_color;
+    color.a *= (1 - mix);
     #else
-        fixed4 color = lerp(outline_color, fill_color, mix);
+    fixed4 color = lerp(outline_color, fill_color, mix);
     #endif
     float alpha = blur(0, 1, dist / outer_blur);
     color.a *= alpha;
