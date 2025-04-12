@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ColorBath
 {
-    public class InputForm : MonoBehaviour
+    public class DiscoveryInputForm : MonoBehaviour
     {
         public string InputText;
         // ‰æ‘œ‚ğ“ü‚ê‚é@InputImage

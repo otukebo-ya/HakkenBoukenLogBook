@@ -8,18 +8,17 @@ namespace ColorBath
 {
     public class PopUpWindow : MonoBehaviour
     {
-        private TMPro.TMP_Text _title;
-        private TMPro.TMP_Text _mainText;
-        private TMPro.TMP_Text _errorText;
-        private InputField _textForm;
+        [SerializeField] private TMPro.TMP_Text _title;
+        [SerializeField] private TMPro.TMP_Text _mainText;
+        [SerializeField] private TMPro.TMP_Text _errorText;
+        [SerializeField] private InputField _inputField;
+        [SerializeField] private Button _okButton;
 
-        // Start is called before the first frame update
+        private System.Action<string> _onOkCallback;
+
         void Start()
         {
-            _title = transform.Find("Title").GetComponent<TMP_Text>();
-            _mainText = transform.Find("MainText").GetComponent<TMP_Text>();
-            _errorText = transform.Find("ErrorText").GetComponent<TMP_Text>();
-            _textForm = transform.Find("InputFieldInWindow").gameObject.GetComponent<InputField>();
+            _okButton.onClick.AddListener(OnOkButtonClicked);
         }
 
         public void SetTitleText(string title) 
@@ -39,7 +38,34 @@ namespace ColorBath
 
         public string GetTextFormInput()
         {
-            return _textForm.text; 
+            return _inputField.text; 
+        }
+
+        private void OnOkButtonClicked()
+        {
+            if (_inputField.gameObject.activeSelf)
+            {
+                string inputValue = GetTextFormInput();
+                Debug.Log("入力"+inputValue);
+                if (string.IsNullOrWhiteSpace(inputValue))
+                {
+                    // <TODO>エラーテキストの点滅
+                    SetErrorText("値を入力してください！！");
+                    return;
+                }
+                _onOkCallback?.Invoke(inputValue);
+            }
+            PopUpWindowController.Instance.Close();
+        }
+
+        public void WithoutInputField()
+        {
+            _inputField.gameObject.SetActive(false);
+        }
+
+        public void SetOnOkCallback(System.Action<string> callback)
+        {
+            _onOkCallback = callback;
         }
     }
 }
