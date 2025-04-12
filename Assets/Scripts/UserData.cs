@@ -7,17 +7,21 @@ using UnityEngine;
 
 namespace ColorBath
 {
-    public class UserData
+    public static class UserData
     {
-        string token;
+        public static string Token
+        {
+            get { return GetGeminiToken(); }
+            set { SetGeiminiToken(value); }
+        }
 
-        public string GetGeminiToken()
+        public static string GetGeminiToken()
         {
             string path = Path.Combine(Application.persistentDataPath, "GeminiToken.json");
 
             if (!File.Exists(path))
             {
-                Debug.LogWarning("ユーザデータが見つかりませんでした");
+                Debug.Log("ユーザデータが見つかりませんでした");
                 return null;
             }
 
@@ -27,7 +31,7 @@ namespace ColorBath
             return data.Token;
         }
 
-        public void SetGeiminiToken(string token)
+        public static void SetGeiminiToken(string token)
         {
             GeminiTokenJson geminiToken = new GeminiTokenJson();
             geminiToken.Token = token;
