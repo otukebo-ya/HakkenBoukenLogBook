@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ColorBath{
     public class UIDirector : MonoBehaviour
     {
         [SerializeField] GameObject PopUpController;
+        [SerializeField] GameObject camImage;
         public static UIDirector Instance;
 
         void Awake()
@@ -19,10 +21,11 @@ namespace ColorBath{
                 Destroy(gameObject);
             }
         }
+
         // Start is called before the first frame update
         void Start()
         {
-            
+
         }
 
         // Update is called once per frame
@@ -61,6 +64,13 @@ namespace ColorBath{
             yield return new WaitUntil(() => isInputDone);
 
             onReceived?.Invoke(input);
+        }
+
+        public void DeviceCamOn()
+        {
+            camImage.SetActive(true);
+            DeviceCam camScript = camImage.GetComponent<DeviceCam>();
+            camScript.CameraOn();
         }
     }
 }

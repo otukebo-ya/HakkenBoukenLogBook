@@ -1,37 +1,112 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using System.IO;
+using TMPro;
 
 namespace ColorBath
 {
     public class ChatField : MonoBehaviour
     {
         public int DiscoveryNum { get; private set; } = 0;
+        [SerializeField] private Transform _chatFieldContent;
+        [SerializeField] private GameObject _discoveryHukidashi;
+        [SerializeField] private GameObject _aizuchiHukidashi;
+        [SerializeField] private Button _camButton;
 
-        // Start is called before the first frame update
         void Start()
         {
-
+            _camButton.onClick.AddListener(UIDirector.Instance.DeviceCamOn);
+            PrintDiscovery("test", "Assets/UI/camera.png");
+            PrintAizuchi("Ç®ï‘Çµ");
+            StartCoroutine(ScrollToBottomNextFrame());
         }
 
-        // Update is called once per frame
-        void Update()
+        private IEnumerator ScrollToBottomNextFrame()
         {
+            yield return null;
 
+            gameObject.GetComponent<ScrollRect>().verticalNormalizedPosition = 0f;
         }
 
+        //Ç≈Ç´ÇΩÇÁÇ¢Ç¢Ç»ÅBå„Ç©ÇÁí«â¡
         public void DeleteDiscovery()
         {
+            //<TODO>î≠å©Çè¡Ç∑èàóù
 
+            StartCoroutine(ScrollToBottomNextFrame());
         }
 
-        public void PrintDiscovery()
+        public void PrintDiscovery(string message, string imagePath ="")
         {
-
+            GameObject newDiscoveryHukidashi = Instantiate(_discoveryHukidashi, _chatFieldContent);
+            if (imagePath != "")
+            {
+                SetHukidashiImage(imagePath, newDiscoveryHukidashi);
+            }
+            SetHukidashiText(message, newDiscoveryHukidashi);
+            StartCoroutine(ScrollToBottomNextFrame());
         }
-        public void PrintAizuchi()
-        {
 
+        public void PrintAizuchi(string message)
+        {
+            GameObject newAizhchiHukidashi = Instantiate(_aizuchiHukidashi, _chatFieldContent);
+            SetHukidashiText(message, newAizhchiHukidashi);
+            StartCoroutine(ScrollToBottomNextFrame());
+        }
+
+        private void SetHukidashiText(string message, GameObject hukidashiInstance)
+        {
+            TextMeshProUGUI text = hukidashiInstance.transform.Find("Hukidashi/Text").GetComponent<TextMeshProUGUI>();
+            if (message != null)
+            {
+                text.text = message;
+            }
+        }
+        
+        private void SetHukidashiImage(string imagePath, GameObject hukidashiInstance)
+        {
+            if (!File.Exists(imagePath))
+            {
+                Debug.LogWarning("âÊëúÇ™å©Ç¬Ç©ÇÁÇ»Ç¢" + imagePath);
+                return;
+            }
+
+            byte[] imageBytes = File.ReadAllBytes(imagePath);
+            Texture2D texture = new Texture2D(2, 2);
+            Image targetImage = hukidashiInstance.transform.Find("Hukidashi/Image").GetComponent<Image>();
+
+            if (texture.LoadImage(imageBytes))
+            {
+                float MaxSize = 500.0f;
+                float width;
+                float height;
+                if (texture.width < texture.height)
+                {
+                    width = texture.width * MaxSize / texture.height;
+                    height = MaxSize;
+                }
+                else
+                {
+                    width = MaxSize;
+                    height = texture.height * MaxSize / texture.width;
+                }
+                Sprite sprite = Sprite.Create(
+                    texture,
+                    new Rect(0, 0, texture.width, texture.height),
+                    new Vector2(0.5f, 0.5f)
+                );
+
+                targetImage.sprite = sprite;
+
+                RectTransform rt = targetImage.GetComponent<RectTransform>();
+                rt.sizeDelta = new Vector2(width, height);
+            }
+            else
+            {
+                Debug.LogWarning("âÊëúÇÃì«Ç›çûÇ›Ç…é∏îsÇµÇ‹ÇµÇΩ");
+            }
         }
     }
 }

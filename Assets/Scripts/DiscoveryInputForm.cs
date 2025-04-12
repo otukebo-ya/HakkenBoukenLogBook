@@ -1,13 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ColorBath
 {
     public class DiscoveryInputForm : MonoBehaviour
     {
-        public string InputText;
-        // ‰æ‘œ‚ğ“ü‚ê‚é@InputImage
+        private InputField _inputField;
+        public string InputText
+        {
+            get { return _inputField.text; }
+        }
+
+        public Image InputImage;
+        [SerializeField] public Button CameraButton;
+
+        void Awake()
+        {
+            _inputField = GetComponent<InputField>();
+        }
 
         // Start is called before the first frame update
         void Start()
