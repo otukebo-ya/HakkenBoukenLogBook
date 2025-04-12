@@ -26,24 +26,15 @@ namespace ColorBath
         // Start is called before the first frame update
         IEnumerator Start()
         {
-            bool isInputDone = false;
-            string receivedToken = "";
-            bool existUseData = CheckUserData();
-            if(!existUseData)
+            bool existUserData = CheckUserData();
+            if (!existUserData)
             {
-                PopUpWindowController.Instance.PopUp(
-                    title: "GeminiAPIのトークンが見つかりません",
-                    mainText: "トークンを入力してください",
-                    errorText: "",
-                    withoutInputField: false,
-                    onOk: (inputValue) =>
-                    {
-                        receivedToken = inputValue;
-                        isInputDone = true;
-                    }
-                );
-                yield return new WaitUntil(() => isInputDone);
-                UserData.Token = receivedToken;
+                string token = "";
+                yield return StartCoroutine(UIDirector.Instance.RequestTokenInput((input) => {
+                    token = input;
+                }));
+
+                UserData.Token = token;
             }
         }
 

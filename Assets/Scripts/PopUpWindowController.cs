@@ -27,11 +27,6 @@ namespace ColorBath{
             _window.SetActive(false);
         }
 
-        void Start()
-        {
-
-        }
-
         public void PopUp(string title, string mainText, string errorText = "", bool withoutInputField = false, System.Action<string> onOk = null)
         {
             // <TODO>アニメーションつける

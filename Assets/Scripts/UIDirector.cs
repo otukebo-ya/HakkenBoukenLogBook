@@ -40,5 +40,27 @@ namespace ColorBath{
         {
 
         }
+
+        public IEnumerator RequestTokenInput(System.Action<string> onReceived)
+        {
+            bool isInputDone = false;
+            string input = "";
+
+            PopUpWindowController.Instance.PopUp(
+                title: "GeminiAPIのトークンが見つかりません",
+                mainText: "トークンを入力してください",
+                errorText: "",
+                withoutInputField: false,
+                onOk: (value) =>
+                {
+                    input = value;
+                    isInputDone = true;
+                }
+            );
+
+            yield return new WaitUntil(() => isInputDone);
+
+            onReceived?.Invoke(input);
+        }
     }
 }
