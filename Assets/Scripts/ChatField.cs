@@ -18,8 +18,6 @@ namespace ColorBath
         void Start()
         {
             _camButton.onClick.AddListener(UIDirector.Instance.DeviceCamOn);
-            PrintDiscovery("test", "Assets/UI/camera.png");
-            PrintAizuchi("‚¨•Ô‚µ");
             StartCoroutine(ScrollToBottomNextFrame());
         }
 

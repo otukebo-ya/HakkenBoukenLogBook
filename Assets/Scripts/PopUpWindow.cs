@@ -63,6 +63,11 @@ namespace ColorBath
             _inputField.gameObject.SetActive(false);
         }
 
+        public void WithInputField()
+        {
+            _inputField.gameObject.SetActive(true);
+        }
+
         public void SetOnOkCallback(System.Action<string> callback)
         {
             _onOkCallback = callback;

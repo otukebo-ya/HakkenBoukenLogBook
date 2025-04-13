@@ -35,18 +35,23 @@ namespace ColorBath{
             _windowShadow.SetActive(true);
             _windowScript.SetTitleText(title);
             _windowScript.SetMainText(mainText);
-            if (errorText != "") {
-                _windowScript.SetErrorText(errorText);
-            }
+            _windowScript.SetErrorText(errorText);
+            
+            
             if (withoutInputField)
             {
                 _windowScript.WithoutInputField();
+            }
+            else
+            {
+                _windowScript.WithInputField();
             }
             _windowScript.SetOnOkCallback(onOk);
         }
 
         public void Close()
         {
+            Debug.Log("windowを閉じるよ");
             // <TODO>アニメーションつける
 
             _window.SetActive(false);

@@ -12,26 +12,30 @@ namespace ColorBath
 {
     public class UsageHistoryManager
     {
-        public string[] RecentThemes { get; } = new string[0];
         private string _path;
         private int _recentlyViewedLogNum = 0;
         private static int NUMBER_OF_FILES = 50;
+        private static UsageHistoryManager _instance = new UsageHistoryManager();
 
-        public UsageHistoryManager()
+        public static UsageHistoryManager Instance
         {
-            _path = Path.Combine(Application.persistentDataPath, "Histories");
-            if (isLoggedInToday())
+            get
             {
-                RecentThemes = LoadRecentThemes(_path);
+                return _instance;
             }
         }
 
-        private bool isLoggedInToday()
+        private UsageHistoryManager()
+        {
+            _path = Path.Combine(Application.persistentDataPath, "Histories");
+        }
+
+        public string GetTodayTheme()
         {
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
             string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
-            return (files.Length > 0) ? true : false; 
+            return (files.Length > 0) ? GetTheme(files[0]) : "";
         }
 
         public History? GetLatestHistory()
@@ -61,9 +65,13 @@ namespace ColorBath
             return GetHistory(path);
         }
 
-        public string[] LoadRecentThemes(string path)
+        public string[] LoadRecentThemes()
         {
             string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
+            if (!Directory.Exists(historyPath))
+            {
+                Directory.CreateDirectory(historyPath);
+            }
             string[] files = Directory.GetFiles(historyPath, "*.json");
             if (files.Length == 0)
             {
@@ -96,17 +104,27 @@ namespace ColorBath
         {
             try
             {
-                using (StreamReader reader = new StreamReader(path))
-                {
-                    string datastr = reader.ReadToEnd();
-                    return JsonUtility.FromJson<History>(datastr);
-                }
+                string encryptedJson = File.ReadAllText(path);
+                string json = CryptoHelper.Decrypt(encryptedJson);
+                return JsonUtility.FromJson<History>(json);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Error reading or parsing the file: {ex.Message}");
                 return null;
             }
+        }
+
+        public void MakeTodaysFile(string theme)
+        {
+            string todaysPath = MakeTodaysHistoryPath();
+            string path = Path.Combine(Application.persistentDataPath, todaysPath);
+            History history = new History();
+            history.Theme = theme;
+            string json = JsonUtility.ToJson(history);
+            string encrypted = CryptoHelper.Encrypt(json);
+            File.WriteAllText(path, encrypted);
+            Debug.Log("今日のファイルが作成されました。" + path);
         }
 
         public void SaveDiscovery(Discovery discovery)
@@ -163,7 +181,8 @@ namespace ColorBath
         private static void SaveHistory(string filePath, History history)
         {
             string json = JsonUtility.ToJson(history, true);
-            File.WriteAllText(filePath, json);
+            string encrypted = CryptoHelper.Encrypt(json);
+            File.WriteAllText(filePath, encrypted);
         }
 
         private DateTime? JsonFileName2Date(string fileName)

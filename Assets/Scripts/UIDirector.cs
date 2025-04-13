@@ -2,12 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Threading.Tasks;
+using TMPro;
 
-namespace ColorBath{
+
+namespace ColorBath
+{
     public class UIDirector : MonoBehaviour
     {
         [SerializeField] GameObject PopUpController;
         [SerializeField] GameObject camImage;
+        [SerializeField] GameObject TodaysThemePanel;
+
         public static UIDirector Instance;
 
         void Awake()
@@ -44,11 +50,10 @@ namespace ColorBath{
 
         }
 
-        public IEnumerator RequestTokenInput(System.Action<string> onReceived)
+        public async Task<string> RequestTokenInput()
         {
-            bool isInputDone = false;
-            string input = "";
-
+            TaskCompletionSource<string> tcs = new TaskCompletionSource<string>();
+            string token = "";
             PopUpWindowController.Instance.PopUp(
                 title: "GeminiAPIのトークンが見つかりません",
                 mainText: "トークンを入力してください",
@@ -56,14 +61,13 @@ namespace ColorBath{
                 withoutInputField: false,
                 onOk: (value) =>
                 {
-                    input = value;
-                    isInputDone = true;
+                    token = value;
+                    tcs.SetResult(value);
                 }
             );
 
-            yield return new WaitUntil(() => isInputDone);
-
-            onReceived?.Invoke(input);
+            await tcs.Task;
+            return token;
         }
 
         public void DeviceCamOn()
@@ -71,6 +75,11 @@ namespace ColorBath{
             camImage.SetActive(true);
             DeviceCam camScript = camImage.GetComponent<DeviceCam>();
             camScript.CameraOn();
+        }
+
+        public void SetTodaysTheme(string theme)
+        {
+            TodaysThemePanel.GetComponent<TextMeshProUGUI>().text = theme;
         }
     }
 }

@@ -1,35 +1,220 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using UnityEngine.UI;
+using System.IO;
+using UnityEngine.Networking;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Linq;
+
 
 namespace ColorBath
 {
     public class GeminiClient
     {
-        private string _reviewPrompt;
-        private string _aizuchiPrompt;
-        private string _themeDecidePrompt;
-
-        private string SendPrompt()
+        private static GeminiClient _instance = new GeminiClient();
+        public static GeminiClient Instance
         {
-            string response = "";
-            return response;
+            get
+            {
+                return _instance;
+            }
         }
 
-        public string SendReviewPrompt()
+        private string _backbone;
+
+        private string _apiEndpoint = "";
+        private string token = "";
+        private GeminiClient()
         {
-            string review = "";
-            return review;
+            token = UserData.Token;
+            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + token;
         }
-        public string SendAizuchiPrompt()
+
+        private Func<string, string> _backboneFactory = (theme) => $@"
+            ＜あなたの設定＞
+            あなたは高飛車なお嬢様です。
+            私に対してフレンドリーな口調で接します。
+            また、細かいところに気を配り人をほめることが得意です。
+            顔文字は使わないようにしましょう。
+            ＜私の設定＞
+            私はカラーバスを行っています。今日のテーマは{theme}です。
+        ";
+
+        private async Task<string> SendPrompt(string prompt)
         {
-            string aizuchi = "";
-            return aizuchi;
+            var requestData = new
+            {
+                contents = new[]
+                {
+                    new { parts = new[] { new { text = _backbone + prompt } } }
+                }
+            };
+            string json = JsonConvert.SerializeObject(requestData);
+
+            using (UnityWebRequest www = new UnityWebRequest(_apiEndpoint, "POST"))
+            {
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+                www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                www.downloadHandler = new DownloadHandlerBuffer();
+                www.SetRequestHeader("Content-Type", "application/json");
+                await www.SendWebRequestAsync();
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"Gemini API Error: {www.error}");
+                    return "";
+                }
+                else
+                {
+                    return www.downloadHandler.text;
+                }
+            }
         }
-        public string SendThemeDecidePrompt()
+
+        private async Task<string> SendPrompt(string prompt, Texture2D image)
         {
-            string theme = "";
-            return theme;
+            List<object> parts = new List<object>();
+            parts.Add(new { text = _backbone + prompt });
+
+            if (image != null)
+            {
+                byte[] imageBytes = image.EncodeToJPG(); // または image.EncodeToPNG();
+                string base64Image = Convert.ToBase64String(imageBytes);
+                parts.Add(new
+                {
+                    inlineData = new
+                    {
+                        mimeType = "image/jpeg", // または "image/png"
+                        data = base64Image
+                    }
+                });
+            }
+
+            var requestData = new
+            {
+                contents = new[]
+                {
+                    new { parts = parts.ToArray() }
+                }
+            };
+            string json = JsonConvert.SerializeObject(requestData);
+
+            using (UnityWebRequest www = new UnityWebRequest(_apiEndpoint, "POST"))
+            {
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+                www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                www.downloadHandler = new DownloadHandlerBuffer();
+                www.SetRequestHeader("Content-Type", "application/json");
+                await www.SendWebRequestAsync();
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"API Error: {www.error}");
+                    return "";
+                }
+                else
+                {
+                    return www.downloadHandler.text;
+                }
+            }
+        }
+
+        public async Task<string> SendReviewPrompt()
+        {
+            string prompt = _backbone + 
+            $@"
+            ＜タスク＞
+　　　　　　本日のこれまでの私の発見について、簡単に総括を行ったうえで、
+            レビューを行ってください。
+            文字数は300字以内とします。
+            ";
+            return await SendPrompt(prompt);
+        }
+
+        public async Task<string> SendAizuchiPrompt(string input, Texture2D image = null)
+        {
+            string prompt = _backbone + 
+            $@"
+            ＜タスク＞
+            今から、私の発見したものをテキスト形式であなたに渡します。
+            あなたはそれを確認し、私のその発見に対する相槌やレビューを行ってください。
+            文字数は300文字以内とします。
+            ＜入力＞
+            {input}
+            ";
+
+            if (image != null)
+            {
+                return await SendPrompt(prompt, image);
+            }
+            else
+            {
+                return await SendPrompt(prompt);
+            }
+        }
+
+        public async Task<string> SendThemeDecidePrompt(string[] recentThemes)
+        {
+            string themesString = "[" + string.Join(",", recentThemes.Select(t => $"\"{t}\"")) + "]";
+            Debug.Log("以前のテーマ"+themesString);
+            string prompt =
+            $@"私はカラーバスを行っています。
+            ここ数日間のテーマは以下の通りです。
+            {themesString}
+            これらのテーマとはかぶらないように、本日探すべきテーマを一つ決定してください。
+            テーマのカテゴリは簡単なものでありつつも色、形、質感、擬音、その他様々なバリエーションから決定してください。
+            必ず応答は以下の形式のJSON形式であることを守ってください。
+            {{
+                  ""theme"": ""提案するテーマ""
+            }}
+
+            JSON形式以外での応答を行わないでください。
+            ";
+            string responce;
+            responce = await SendPrompt(prompt);
+            Debug.Log(responce);
+            if(!string.IsNullOrEmpty(responce))
+            {
+                try
+                {
+                    // JSONとしてパースを試みる
+                    JObject json = JObject.Parse(responce);
+                    string rawText = json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
+                    string cleanedJson = Regex.Replace(rawText, @"^```json\s*|```$", "", RegexOptions.Multiline).Trim();
+                    JObject themeJson = JObject.Parse(cleanedJson);
+                    string theme = themeJson["theme"]?.ToString();
+                    Debug.Log(theme);
+                    _backbone = _backboneFactory(theme);
+                    return theme;
+                }
+                catch (JsonException e)
+                {
+                    Debug.LogError($"JSON パースエラー: {e.Message}\n応答: {responce}");
+                    return "";
+                }
+            }else
+            {
+                Debug.Log("レスポンス無し");
+                return "";
+            }
+        }
+    }
+
+    public static class UnityWebRequestExtensions
+    {
+        public static Task<UnityWebRequest> SendWebRequestAsync(this UnityWebRequest request)
+        {
+            var tcs = new TaskCompletionSource<UnityWebRequest>();
+            var operation = request.SendWebRequest();
+            operation.completed += _ =>
+            {
+                tcs.SetResult(request);
+            };
+            return tcs.Task;
         }
     }
 }
