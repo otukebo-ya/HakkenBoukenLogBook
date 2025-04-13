@@ -34,7 +34,9 @@ namespace ColorBath
             _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + token;
         }
 
-        private Func<string, string> _backboneFactory = (theme) => $@"
+        public void SetBackBone(string theme) {
+            _backbone = 
+            $@"
             ＜あなたの設定＞
             あなたは高飛車なお嬢様です。
             私に対してフレンドリーな口調で接します。
@@ -42,7 +44,8 @@ namespace ColorBath
             顔文字は使わないようにしましょう。
             ＜私の設定＞
             私はカラーバスを行っています。今日のテーマは{theme}です。
-        ";
+            "; 
+        }
 
         private async Task<string> SendPrompt(string prompt)
         {
@@ -130,30 +133,57 @@ namespace ColorBath
             ＜タスク＞
 　　　　　　本日のこれまでの私の発見について、簡単に総括を行ったうえで、
             レビューを行ってください。
-            文字数は300字以内とします。
+            文字数は200字以内とします。
             ";
             return await SendPrompt(prompt);
         }
 
         public async Task<string> SendAizuchiPrompt(string input, Texture2D image = null)
         {
-            string prompt = _backbone + 
+            Debug.Log(_backbone);
+            string prompt = 
             $@"
+            {_backbone}\n
             ＜タスク＞
             今から、私の発見したものをテキスト形式であなたに渡します。
             あなたはそれを確認し、私のその発見に対する相槌やレビューを行ってください。
-            文字数は300文字以内とします。
+            文字数は100文字以内とします。
             ＜入力＞
             {input}
             ";
 
+            Debug.Log("プロンプト"+prompt);
+
+            string responce = "";
             if (image != null)
             {
-                return await SendPrompt(prompt, image);
+                responce = await SendPrompt(prompt, image);
+                
             }
             else
             {
-                return await SendPrompt(prompt);
+                responce = await SendPrompt(prompt);
+            }
+
+            if (!string.IsNullOrEmpty(responce))
+            {
+                try
+                {
+                    // JSONとしてパースを試みる
+                    string responceText = GetResponceText(responce);
+                    Debug.Log(responceText);
+                    return responceText;
+                }
+                catch (JsonException e)
+                {
+                    Debug.LogError($"JSON パースエラー: {e.Message}\n応答: {responce}");
+                    return "";
+                }
+            }
+            else
+            {
+                Debug.Log("レスポンス無し");
+                return "";
             }
         }
 
@@ -182,13 +212,11 @@ namespace ColorBath
                 try
                 {
                     // JSONとしてパースを試みる
-                    JObject json = JObject.Parse(responce);
-                    string rawText = json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
-                    string cleanedJson = Regex.Replace(rawText, @"^```json\s*|```$", "", RegexOptions.Multiline).Trim();
+                    string responceText = GetResponceText(responce);
+                    string cleanedJson = Regex.Replace(responceText, @"^```json\s*|```$", "", RegexOptions.Multiline).Trim();
                     JObject themeJson = JObject.Parse(cleanedJson);
                     string theme = themeJson["theme"]?.ToString();
                     Debug.Log(theme);
-                    _backbone = _backboneFactory(theme);
                     return theme;
                 }
                 catch (JsonException e)
@@ -201,6 +229,13 @@ namespace ColorBath
                 Debug.Log("レスポンス無し");
                 return "";
             }
+        }
+
+        public string GetResponceText(string responce)
+        {
+            JObject json = JObject.Parse(responce);
+            string rawText = json["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
+            return rawText;
         }
     }
 

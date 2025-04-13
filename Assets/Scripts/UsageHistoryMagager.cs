@@ -15,6 +15,7 @@ namespace ColorBath
         private string _path;
         private int _recentlyViewedLogNum = 0;
         private static int NUMBER_OF_FILES = 50;
+
         private static UsageHistoryManager _instance = new UsageHistoryManager();
 
         public static UsageHistoryManager Instance

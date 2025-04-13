@@ -14,6 +14,18 @@ namespace ColorBath
         [SerializeField] private GameObject _discoveryHukidashi;
         [SerializeField] private GameObject _aizuchiHukidashi;
         [SerializeField] private Button _camButton;
+        public static ChatField Instance { get; private set; }
+
+        void Awake()
+        {
+            if(Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
 
         void Start()
         {
@@ -43,6 +55,15 @@ namespace ColorBath
             {
                 SetHukidashiImage(imagePath, newDiscoveryHukidashi);
             }
+            SetHukidashiText(message, newDiscoveryHukidashi);
+            StartCoroutine(ScrollToBottomNextFrame());
+        }
+
+        public void PrintDiscovery(string message, Texture2D texture)
+        {
+            GameObject newDiscoveryHukidashi = Instantiate(_discoveryHukidashi, _chatFieldContent);
+            SetHukidashiImage(texture, newDiscoveryHukidashi);
+
             SetHukidashiText(message, newDiscoveryHukidashi);
             StartCoroutine(ScrollToBottomNextFrame());
         }
@@ -77,7 +98,7 @@ namespace ColorBath
 
             if (texture.LoadImage(imageBytes))
             {
-                float MaxSize = 500.0f;
+                float MaxSize = 100.0f;
                 float width;
                 float height;
                 if (texture.width < texture.height)
@@ -106,5 +127,40 @@ namespace ColorBath
                 Debug.LogWarning("画像の読み込みに失敗しました");
             }
         }
+
+        private void SetHukidashiImage(Texture2D texture, GameObject hukidashiInstance)
+        {
+            Image targetImage = hukidashiInstance.transform.Find("Hukidashi/Image").GetComponent<Image>();
+
+            float aspect = (float)texture.width / texture.height;
+
+            // スプライト設定
+            Sprite sprite = Sprite.Create(
+                texture,
+                new Rect(0, 0, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f)
+            );
+            targetImage.sprite = sprite;
+
+            // AspectRatioFitterを設定
+            AspectRatioFitter fitter = targetImage.GetComponent<AspectRatioFitter>();
+            if (fitter == null)
+                fitter = targetImage.gameObject.AddComponent<AspectRatioFitter>();
+
+            fitter.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
+            fitter.aspectRatio = aspect;
+
+            // LayoutElementで高さ指定（重要！）
+            LayoutElement layout = targetImage.GetComponent<LayoutElement>();
+            if (layout == null)
+                layout = targetImage.gameObject.AddComponent<LayoutElement>();
+
+            layout.preferredHeight = 100f; // ここで高さを明示
+            layout.flexibleHeight = 0;
+            layout.minHeight = 0;
+
+            // AspectRatioFitterに合わせるので幅は自動になる（HeightControlsWidthの効果が出る）
+        }
+
     }
 }

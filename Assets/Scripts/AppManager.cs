@@ -60,6 +60,8 @@ namespace ColorBath
                 UsageHistoryManager.Instance.MakeTodaysFile(Theme);
             }
 
+            GeminiClient.Instance.SetBackBone(Theme);
+
             UIDirector.Instance.SetTodaysTheme(Theme);
         }
 

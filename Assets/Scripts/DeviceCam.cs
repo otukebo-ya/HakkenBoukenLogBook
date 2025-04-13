@@ -12,6 +12,7 @@ namespace ColorBath
         private int _imageHeight;
         [SerializeField] private RawImage _rawImage;
         [SerializeField] private Button _captureButton;
+
         WebCamTexture webCamTexture;
         private string _capturedImagePath;
         private Texture2D _capturedImage;
@@ -33,6 +34,16 @@ namespace ColorBath
             _imageWidth = webCamTexture.width;
             _imageHeight = webCamTexture.height;
             AdjustRawImage();
+        }
+
+        public void CameraOff()
+        {
+            if (webCamTexture != null && webCamTexture.isPlaying)
+            {
+                webCamTexture.Stop(); // ÉJÉÅÉâí‚é~
+            }
+
+            gameObject.SetActive(false);
         }
 
         void AdjustRawImage()
@@ -78,10 +89,11 @@ namespace ColorBath
             File.WriteAllBytes(filePath, imageBytes);
 
             Debug.Log("âÊëúï€ë∂êÊ: " + filePath);
-
+            DiscoveryInputForm.Instance.SetCapturedImage(photo);
             AddImageToGallery(filePath);
             _capturedImagePath = filePath;
             _capturedImage = photo;
+            CameraOff();
         }
 
         // androidÇÃèÍçáÇÃÇ›
