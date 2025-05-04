@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Security.Cryptography;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 #nullable enable
 
 namespace ColorBath
@@ -33,10 +35,18 @@ namespace ColorBath
 
         public string GetTodayTheme()
         {
+
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
             string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
             return (files.Length > 0) ? GetTheme(files[0]) : "";
+        }
+
+        public Discovery[]? GetTodayDiscoveries() {
+            DateTime today = DateTime.Today;
+            string todaysFileName = Date2JsonFileName(today, "history");
+            string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
+            return (files.Length > 0) ? GetDiscoveries(files[0]) : null;
         }
 
         public History? GetLatestHistory()
@@ -101,13 +111,22 @@ namespace ColorBath
             return history?.Theme ?? "";
         }
 
+        private Discovery[]? GetDiscoveries(string path)
+        {
+            History? history = GetHistory(path);
+            return history?.Discoveries ?? null;
+        }
+
         private History? GetHistory(string path)
         {
             try
             {
-                string encryptedJson = File.ReadAllText(path);
-                string json = CryptoHelper.Decrypt(encryptedJson);
-                return JsonUtility.FromJson<History>(json);
+                // 暗号化する場合
+                //string encryptedJson = File.ReadAllText(path);
+                //string json = CryptoHelper.Decrypt(encryptedJson);
+
+                string json = File.ReadAllText(path);
+                return JsonConvert.DeserializeObject<History>(json);
             }
             catch (Exception ex)
             {
@@ -122,9 +141,14 @@ namespace ColorBath
             string path = Path.Combine(Application.persistentDataPath, todaysPath);
             History history = new History();
             history.Theme = theme;
+            history.Date = DateTime.Today;
             string json = JsonUtility.ToJson(history);
-            string encrypted = CryptoHelper.Encrypt(json);
-            File.WriteAllText(path, encrypted);
+            
+            //暗号化する場合
+            //string encrypted = CryptoHelper.Encrypt(json);
+            //File.WriteAllText(path, encrypted);
+
+            File.WriteAllText(path, json);
             Debug.Log("今日のファイルが作成されました。" + path);
         }
 
@@ -137,8 +161,13 @@ namespace ColorBath
                 List<Discovery> discoveryList = history.Discoveries?.ToList() ?? new List<Discovery>();
                 discoveryList.Add(discovery);
                 history.Discoveries = discoveryList.ToArray();
-
+                Debug.Log("My discovery was saved to  " + todaysPath);
+                Debug.Log(history.Discoveries[0].Memo);
                 SaveHistory(todaysPath, history);
+            }
+            else
+            {
+                Debug.Log("Don't exist history!!");
             }
         }
 
@@ -181,9 +210,13 @@ namespace ColorBath
 
         private static void SaveHistory(string filePath, History history)
         {
-            string json = JsonUtility.ToJson(history, true);
-            string encrypted = CryptoHelper.Encrypt(json);
-            File.WriteAllText(filePath, encrypted);
+
+            string json = JsonConvert.SerializeObject(history);
+            // 読めなくする場合
+            //string encrypted = CryptoHelper.Encrypt(json);
+            //File.WriteAllText(filePath, encrypted);
+            Debug.Log("saved"+json);
+            File.WriteAllText(filePath, json);
         }
 
         private DateTime? JsonFileName2Date(string fileName)
