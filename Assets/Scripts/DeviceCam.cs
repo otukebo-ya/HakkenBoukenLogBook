@@ -89,7 +89,7 @@ namespace ColorBath
             File.WriteAllBytes(filePath, imageBytes);
 
             Debug.Log("âÊëúï€ë∂êÊ: " + filePath);
-            DiscoveryInputForm.Instance.SetCapturedImage(photo);
+            DiscoveryInputForm.Instance.SetCapturedImage(photo, filePath);
             AddImageToGallery(filePath);
             _capturedImagePath = filePath;
             _capturedImage = photo;

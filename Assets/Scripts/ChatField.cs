@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using TMPro;
-
+using System.Linq;
 namespace ColorBath
 {
     public class ChatField : MonoBehaviour
@@ -134,7 +134,6 @@ namespace ColorBath
 
             float aspect = (float)texture.width / texture.height;
 
-            // スプライト設定
             Sprite sprite = Sprite.Create(
                 texture,
                 new Rect(0, 0, texture.width, texture.height),
@@ -142,7 +141,6 @@ namespace ColorBath
             );
             targetImage.sprite = sprite;
 
-            // AspectRatioFitterを設定
             AspectRatioFitter fitter = targetImage.GetComponent<AspectRatioFitter>();
             if (fitter == null)
                 fitter = targetImage.gameObject.AddComponent<AspectRatioFitter>();
@@ -150,16 +148,22 @@ namespace ColorBath
             fitter.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
             fitter.aspectRatio = aspect;
 
-            // LayoutElementで高さ指定（重要！）
             LayoutElement layout = targetImage.GetComponent<LayoutElement>();
             if (layout == null)
                 layout = targetImage.gameObject.AddComponent<LayoutElement>();
 
-            layout.preferredHeight = 100f; // ここで高さを明示
+            layout.preferredHeight = 100f;
             layout.flexibleHeight = 0;
             layout.minHeight = 0;
+        }
 
-            // AspectRatioFitterに合わせるので幅は自動になる（HeightControlsWidthの効果が出る）
+        public void LineUpTodayDiscoveries(Discovery[] discoveries)
+        {
+            for (int i = 0; i < discoveries.Length; i++)
+            {
+                PrintDiscovery(discoveries[i].Memo, imagePath: discoveries[0].ImagePath);
+                PrintAizuchi(discoveries[i].Aizuchi);
+            }
         }
 
     }

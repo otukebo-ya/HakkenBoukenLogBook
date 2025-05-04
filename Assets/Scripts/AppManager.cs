@@ -31,7 +31,6 @@ namespace ColorBath
             Initialize().Forget();
         }
 
-        // Start is called before the first frame update
         async Task Initialize()
         {
             bool existUserData = CheckUserData();
@@ -43,6 +42,7 @@ namespace ColorBath
             Theme = UsageHistoryManager.Instance.GetTodayTheme();
             if (Theme == "")
             {
+
                 Debug.Log("ç°ì˙èâÇﬂÇƒÇÃÉçÉOÉCÉìÇ≈Ç∑ÅB");
                 string[] recentThemes = UsageHistoryManager.Instance.LoadRecentThemes();
                 Theme = await GeminiClient.Instance.SendThemeDecidePrompt(recentThemes);
@@ -63,9 +63,13 @@ namespace ColorBath
             GeminiClient.Instance.SetBackBone(Theme);
 
             UIDirector.Instance.SetTodaysTheme(Theme);
+            Discovery[]? todayDiscoveries = UsageHistoryManager.Instance.GetTodayDiscoveries();
+            if(todayDiscoveries is not null)
+            {
+                ChatField.Instance.LineUpTodayDiscoveries(todayDiscoveries);
+            }
         }
 
-        // Update is called once per frame
         void Update()
         {
 

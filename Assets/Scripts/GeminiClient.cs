@@ -25,13 +25,15 @@ namespace ColorBath
         }
 
         private string _backbone;
-
+        private float _temperature = 2.0f;
+        private int _top_k = 40;
+        private float _top_p = 1.0f;
         private string _apiEndpoint = "";
         private string token = "";
         private GeminiClient()
         {
             token = UserData.Token;
-            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + token;
+            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + token;
         }
 
         public void SetBackBone(string theme) {
@@ -54,6 +56,12 @@ namespace ColorBath
                 contents = new[]
                 {
                     new { parts = new[] { new { text = _backbone + prompt } } }
+                },
+                generationConfig = new
+                {
+                    temperature = _temperature,
+                    top_k = _top_k,
+                    top_p = _top_p
                 }
             };
             string json = JsonConvert.SerializeObject(requestData);
@@ -82,7 +90,7 @@ namespace ColorBath
         {
             List<object> parts = new List<object>();
             parts.Add(new { text = _backbone + prompt });
-
+            
             if (image != null)
             {
                 byte[] imageBytes = image.EncodeToJPG(); // または image.EncodeToPNG();
@@ -102,6 +110,12 @@ namespace ColorBath
                 contents = new[]
                 {
                     new { parts = parts.ToArray() }
+                },
+                generationConfig = new
+                {
+                    temperature = _temperature,
+                    top_k = _top_k,
+                    top_p = _top_p
                 }
             };
             string json = JsonConvert.SerializeObject(requestData);
@@ -152,8 +166,6 @@ namespace ColorBath
             {input}
             ";
 
-            Debug.Log("プロンプト"+prompt);
-
             string responce = "";
             if (image != null)
             {
@@ -193,10 +205,14 @@ namespace ColorBath
             Debug.Log("以前のテーマ"+themesString);
             string prompt =
             $@"私はカラーバスを行っています。
+            これは、毎日抽象的で簡単なテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につながります。
             ここ数日間のテーマは以下の通りです。
             {themesString}
-            これらのテーマとはかぶらないように、本日探すべきテーマを一つ決定してください。
-            テーマのカテゴリは簡単なものでありつつも色、形、質感、擬音、その他様々なバリエーションから決定してください。
+            これらのテーマとはかぶらないように、本日探すべきテーマをランダムに一つ決めてしてください。
+            テーマは色、形、質感、擬音、その他様々なバリエーションから決定してください。
+            テーマは該当する範囲が狭くなりすぎないように、抽象的かつ、簡潔な表現にしてください。
+            複数の表現を組み合わされると該当するモノが減り困ります。
+            また、時間帯や土地名などは、その場にいないといけないので困るから選ばないように。
             必ず応答は以下の形式のJSON形式であることを守ってください。
             {{
                   ""theme"": ""提案するテーマ""

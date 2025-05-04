@@ -12,5 +12,6 @@ namespace ColorBath
         public string Theme;
         public Discovery[] Discoveries;
         public string Review;
+        public bool Reviewed;
     }
 }

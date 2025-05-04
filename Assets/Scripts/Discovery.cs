@@ -7,7 +7,8 @@ namespace ColorBath
 {
     public class Discovery
     {
-        string memo;
-        string imagePath;
+        public string Memo;
+        public string Aizuchi;
+        public string ImagePath;
     }
 }

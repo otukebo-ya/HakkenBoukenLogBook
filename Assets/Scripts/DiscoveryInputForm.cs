@@ -18,6 +18,7 @@ namespace ColorBath
         public Image InputImage;
         private Texture2D _captuedTexture;
         [SerializeField] private RawImage _capturedImage;
+        [SerializeField] private string _capturedImagePath;
         [SerializeField] public Button CameraButton;
         [SerializeField] private Button _sendButton;
 
@@ -33,24 +34,27 @@ namespace ColorBath
         }
         private async Task SendButtonClicked()
         {
-            Debug.Log("sendButtonClicked!!");
             string inputText = GetTextFormInput();
 
             string aizuchi = "";
             if (_captuedTexture is null)
             {
-                Debug.Log("âÊëúÇ»ÇµÇÃî≠å©");
                 ChatField.Instance.PrintDiscovery(inputText);
                 aizuchi = await GeminiClient.Instance.SendAizuchiPrompt(inputText);
             }
             else
             {
-                Debug.Log("âÊëúÇ†ÇËÇÃî≠å©");
                 ChatField.Instance.PrintDiscovery(inputText, _captuedTexture);
                 aizuchi = await GeminiClient.Instance.SendAizuchiPrompt(inputText, _captuedTexture);
             }
             ChatField.Instance.PrintAizuchi(aizuchi);
 
+            Discovery discovery = new Discovery();
+            discovery.Memo = inputText;
+            discovery.Aizuchi = aizuchi;
+            if(_captuedTexture is not null) { discovery.ImagePath = _capturedImagePath; }
+
+            UsageHistoryManager.Instance.SaveDiscovery(discovery);
             ClearInputForm();
         }
 
@@ -72,17 +76,17 @@ namespace ColorBath
 
         public void ClearInputForm()
         {
-            Debug.Log("InputFormÇÉNÉäÉAÅ[");
             _captuedTexture = null;
+            _capturedImagePath = "";
             _capturedImage.texture = null;
             _inputField.text = "";
             _capturedImage.gameObject.SetActive(false);
         }
 
-        public void SetCapturedImage(Texture2D texture)
+        public void SetCapturedImage(Texture2D texture, string path)
         {
             _captuedTexture = texture;
-            Debug.Log(_captuedTexture);
+            _capturedImagePath = path;
             _capturedImage.texture = texture;
             _capturedImage.gameObject.SetActive(true);
         }
