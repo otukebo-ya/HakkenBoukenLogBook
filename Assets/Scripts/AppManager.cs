@@ -5,14 +5,14 @@ using UnityEngine;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
-
+#nullable enable
 namespace ColorBath
 {
     public class AppManager : MonoBehaviour
     {
         public string Theme = "";
         public DateTime Today;
-        public static AppManager Instance;
+        public static AppManager? Instance;
 
         public AppManager()
         {

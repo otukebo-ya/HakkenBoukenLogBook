@@ -96,19 +96,22 @@ namespace ColorBath
             CameraOff();
         }
 
-        // androidÇÃèÍçáÇÃÇ›
         private void AddImageToGallery(string filePath)
         {
 #if UNITY_ANDROID
-        if (Application.platform == RuntimePlatform.Android)
+    if (Application.platform == RuntimePlatform.Android)
+    {
+        // UnityPlayer ÇÃ currentActivity ÇéÊìæ
+        AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+
+        using (AndroidJavaClass mediaScanner = new AndroidJavaClass("android.media.MediaScannerConnection"))
         {
-            using (AndroidJavaClass mediaScanner = new AndroidJavaClass("android.media.MediaScannerConnection"))
-            {
-                AndroidJavaObject context = new AndroidJavaObject("android.content.ContextWrapper", UnityPlayer.currentActivity);
-                mediaScanner.CallStatic("scanFile", context, new string[] { filePath }, null, null);
-            }
+            mediaScanner.CallStatic("scanFile", currentActivity, new string[] { filePath }, null, null);
         }
+    }
 #endif
         }
+
     }
 }
