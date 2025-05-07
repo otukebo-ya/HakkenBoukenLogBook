@@ -28,16 +28,7 @@ namespace ColorBath
             }
         }
 
-        void Start()
-        {
-
-        }
-
-        void Update()
-        {
         
-        }
-
         public void ThemeDecideAnimation()
         {
 
@@ -48,6 +39,7 @@ namespace ColorBath
 
         }
 
+        // APIトークンを入力させるウィンドウの表示
         public async Task<string> RequestTokenInput()
         {
             TaskCompletionSource<string> tcs = new TaskCompletionSource<string>();
@@ -68,6 +60,7 @@ namespace ColorBath
             return token;
         }
 
+        // カメラ映像の表示
         public void DeviceCamOn()
         {
             camImage.SetActive(true);
@@ -75,6 +68,7 @@ namespace ColorBath
             camScript.CameraOn();
         }
 
+        // 今日のテーマを表示
         public void SetTodaysTheme(string theme)
         {
             TodaysThemePanel.GetComponent<TextMeshProUGUI>().text = theme;

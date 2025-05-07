@@ -26,63 +26,65 @@ namespace ColorBath
         {
             Instance = this;
             _inputField = GetComponent<InputField>();
+
+            // 送信ボタンの設定
             _sendButton.onClick.AddListener(() =>
             {
                 _ = SendButtonClicked();
             });
+
+            // 撮影した画像を表示する場所を非表示にしておく
             _capturedImage.gameObject.SetActive(false);
         }
+
+        // 送信ボタンの処理
         private async Task SendButtonClicked()
         {
             string inputText = GetTextFormInput();
 
             string aizuchi = "";
-            if (_captuedTexture is null)
+            if (_captuedTexture is null) // 画像がない場合
             {
+                // ユーザの発見メモを表示
                 ChatField.Instance.PrintDiscovery(inputText);
+
+                // 相槌作成
                 aizuchi = await GeminiClient.Instance.SendAizuchiPrompt(inputText);
             }
-            else
+            else　// 画像が撮影されていた場合
             {
                 ChatField.Instance.PrintDiscovery(inputText, _captuedTexture);
                 aizuchi = await GeminiClient.Instance.SendAizuchiPrompt(inputText, _captuedTexture);
             }
+
+            // 相槌の表示
             ChatField.Instance.PrintAizuchi(aizuchi);
 
-            Discovery discovery = new Discovery();
-            discovery.Memo = inputText;
-            discovery.Aizuchi = aizuchi;
-            if(_captuedTexture is not null) { discovery.ImagePath = _capturedImagePath; }
-
+            // Discovery型のオブジェクトに格納し、ファイルに保存
+            Discovery discovery = MakeNewDiscovery(inputText, aizuchi);
             UsageHistoryManager.Instance.SaveDiscovery(discovery);
+
+            // 初期化
             ClearInputForm();
         }
 
+        // ユーザの入力テキスト（発見メモ）を取得
         public string GetTextFormInput()
         {
             return _inputField.text;
         }
 
-        public void SaveHistory()
-        {
-
-        }
-
-        public Discovery GetInput()
-        {
-            Discovery discovery = new Discovery();
-            return discovery;
-        }
-
+        // 入力場所の初期化関数
         public void ClearInputForm()
         {
             _captuedTexture = null;
-            _capturedImagePath = "";
-            _capturedImage.texture = null;
             _inputField.text = "";
+
+            RemoveCapturedImage();
             _capturedImage.gameObject.SetActive(false);
         }
 
+        // デバイスのカメラで撮影した画像を小さく表示
         public void SetCapturedImage(Texture2D texture, string path)
         {
             _captuedTexture = texture;
@@ -94,11 +96,18 @@ namespace ColorBath
         public void RemoveCapturedImage()
         {
             _capturedImage.texture = null ;
+            _capturedImagePath = "";
         }
 
-        public string GenerateAizuchi()
+        // 発見メモ、画像、それに対する相槌をまとめてオブジェクト化
+        private Discovery MakeNewDiscovery(string inputText, string aizuchi)
         {
-            return "";
+            Discovery discovery = new Discovery();
+            discovery.Memo = inputText;
+            discovery.Aizuchi = aizuchi;
+            if (_captuedTexture is not null) { discovery.ImagePath = _capturedImagePath; }
+
+            return discovery;
         }
     }
 }

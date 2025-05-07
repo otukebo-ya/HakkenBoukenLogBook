@@ -33,6 +33,7 @@ namespace ColorBath
             _path = Path.Combine(Application.persistentDataPath, "Histories");
         }
 
+        // 今日のテーマを取得
         public string GetTodayTheme()
         {
 
@@ -42,6 +43,7 @@ namespace ColorBath
             return (files.Length > 0) ? GetTheme(files[0]) : "";
         }
 
+        // 今日の発見を取得
         public Discovery[]? GetTodayDiscoveries() {
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
@@ -49,6 +51,7 @@ namespace ColorBath
             return (files.Length > 0) ? GetDiscoveries(files[0]) : null;
         }
 
+        // 直近の履歴を取得
         public History? GetLatestHistory()
         {
             string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
@@ -76,6 +79,7 @@ namespace ColorBath
             return GetHistory(path);
         }
 
+        // ここ数日のテーマを取得
         public string[] LoadRecentThemes()
         {
             string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
@@ -105,18 +109,21 @@ namespace ColorBath
             return recentThemes;
         }
 
+        // 特定のファイルからテーマを取得
         private string GetTheme(string path)
         {
             History? history = GetHistory(path);
             return history?.Theme ?? "";
         }
 
+        // 特定のファイルから発見を取得
         private Discovery[]? GetDiscoveries(string path)
         {
             History? history = GetHistory(path);
             return history?.Discoveries ?? null;
         }
 
+        // 特定のファイルから履歴を取得
         private History? GetHistory(string path)
         {
             try
@@ -135,6 +142,7 @@ namespace ColorBath
             }
         }
 
+        // その日の記録を行うファイルを作成
         public void MakeTodaysFile(string theme)
         {
             string todaysPath = MakeTodaysHistoryPath();
@@ -152,6 +160,7 @@ namespace ColorBath
             Debug.Log("今日のファイルが作成されました。" + path);
         }
 
+        // 発見をその日のファイルに保存
         public void SaveDiscovery(Discovery discovery)
         {
             string todaysPath = MakeTodaysHistoryPath();
@@ -187,6 +196,7 @@ namespace ColorBath
             }
         }
 
+        // 特定の日付のレビューを保存
         public void SaveReview(string review, DateTime dateTime)
         {
             string fileName = Date2JsonFileName(dateTime, "history");
@@ -200,6 +210,7 @@ namespace ColorBath
             }
         }
 
+        // 今日の履歴の場所を表すパスを作成
         public string MakeTodaysHistoryPath()
         {
             DateTime today = DateTime.Today;
@@ -208,6 +219,7 @@ namespace ColorBath
             return path;
         }
 
+        // 特定のファイルに履歴を保存
         private static void SaveHistory(string filePath, History history)
         {
 
@@ -219,6 +231,7 @@ namespace ColorBath
             File.WriteAllText(filePath, json);
         }
 
+        // Jsonファイル名　＝＞　日付
         private DateTime? JsonFileName2Date(string fileName)
         {
             var datePart = fileName.Substring(fileName.LastIndexOf('_') + 1).Replace(".json", "");
@@ -230,6 +243,7 @@ namespace ColorBath
             return null;
         }
 
+        // 日付　＝＞　Jsonファイル名
         private string Date2JsonFileName(DateTime date, string prefix)
         {
             string date_str= date.ToString("yyyy_MM_dd");

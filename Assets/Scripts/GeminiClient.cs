@@ -25,9 +25,10 @@ namespace ColorBath
         }
 
         private string _backbone;
-        private float _temperature = 2.0f;
-        private int _top_k = 40;
-        private float _top_p = 1.0f;
+        private string _todayTheme;
+        private float _temperature = 2.0f;// GeminiAPIの回答のランダム性
+        private int _top_k = 40;// ランダム性にかかわるパラメータ
+        private float _top_p = 1.0f;// ランダム性にかかわるパラメータ
         private string _apiEndpoint = "";
         private string token = "";
         private GeminiClient()
@@ -36,7 +37,9 @@ namespace ColorBath
             _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + token;
         }
 
+        // キャラ付けと、やっていることをGeminiAPIに教えるためのプロンプト
         public void SetBackBone(string theme) {
+            _todayTheme = theme;
             _backbone = 
             $@"
             ＜あなたの設定＞
@@ -45,17 +48,21 @@ namespace ColorBath
             また、細かいところに気を配り人をほめることが得意です。
             顔文字は使わないようにしましょう。
             ＜私の設定＞
-            私はカラーバスを行っています。今日のテーマは{theme}です。
+            私はカラーバスを行っています。
+            毎日抽象的で簡単なテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につなげます。
             "; 
         }
 
+        // プロンプトの送信（オーバロードあり）
+        // 画像がない場合の処理
         private async Task<string> SendPrompt(string prompt)
         {
+            // リクエストデータをJsonに
             var requestData = new
             {
                 contents = new[]
                 {
-                    new { parts = new[] { new { text = _backbone + prompt } } }
+                    new { parts = new[] { new { text = prompt } } }
                 },
                 generationConfig = new
                 {
@@ -66,12 +73,14 @@ namespace ColorBath
             };
             string json = JsonConvert.SerializeObject(requestData);
 
+
+            // APIにポストを行う
             using (UnityWebRequest www = new UnityWebRequest(_apiEndpoint, "POST"))
             {
                 byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
                 www.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 www.downloadHandler = new DownloadHandlerBuffer();
-                www.SetRequestHeader("Content-Type", "application/json");
+                www.SetRequestHeader("Content-Type", "application/json");// 回答をJson形式に指定
                 await www.SendWebRequestAsync();
 
                 if (www.result != UnityWebRequest.Result.Success)
@@ -86,20 +95,22 @@ namespace ColorBath
             }
         }
 
+        // プロンプトの送信（オーバロードあり）
+        // 画像がある場合の処理
         private async Task<string> SendPrompt(string prompt, Texture2D image)
         {
             List<object> parts = new List<object>();
-            parts.Add(new { text = _backbone + prompt });
+            parts.Add(new { text = prompt });
             
             if (image != null)
             {
-                byte[] imageBytes = image.EncodeToJPG(); // または image.EncodeToPNG();
+                byte[] imageBytes = image.EncodeToJPG();
                 string base64Image = Convert.ToBase64String(imageBytes);
                 parts.Add(new
                 {
                     inlineData = new
                     {
-                        mimeType = "image/jpeg", // または "image/png"
+                        mimeType = "image/jpeg",
                         data = base64Image
                     }
                 });
@@ -140,21 +151,40 @@ namespace ColorBath
             }
         }
 
-        public async Task<string> SendReviewPrompt()
+        // 先日の発見に対するレビュー用のラッパー
+        public async Task<string> SendReviewPrompt(History history)
         {
+            // 先日の履歴から、発見と相槌を取り出し
+            Discovery[] discoveries = history.Discoveries;
+            string discoveriesText="";
+            for (int d = 1; d <= discoveries.Length; d++)
+            {
+                discoveriesText += $@"<発見{d}個目>\n"
+                                +$@"　・私の発見：{discoveries[d-1].Memo}\n"
+                                +$@"　・あなたの相槌：{discoveries[d-1].Aizuchi}\n";
+            }
+
+            // 背景とタスクを合わせる
             string prompt = _backbone + 
             $@"
             ＜タスク＞
-　　　　　　本日のこれまでの私の発見について、簡単に総括を行ったうえで、
+            今から、私がテーマに沿って発見したものとそれに対するあなたの相槌のログを教えます。
+　　　　　　私の発見について、簡単に総括を行ったうえで、
             レビューを行ってください。
+            内容はポジティブだといいな。
             文字数は200字以内とします。
+            ＜ログ＞
+            {discoveriesText}
             ";
+
+            // 送信
             return await SendPrompt(prompt);
         }
 
+        // 発見に対する相槌作成用のラッパー
         public async Task<string> SendAizuchiPrompt(string input, Texture2D image = null)
         {
-            Debug.Log(_backbone);
+            // 背景とタスクを合わせる
             string prompt = 
             $@"
             {_backbone}\n
@@ -162,10 +192,12 @@ namespace ColorBath
             今から、私の発見したものをテキスト形式であなたに渡します。
             あなたはそれを確認し、私のその発見に対する相槌やレビューを行ってください。
             文字数は100文字以内とします。
+            本日のカラーバスのテーマは{_todayTheme}です。
             ＜入力＞
             {input}
             ";
 
+            // 画像があるかどうかで関数の使い分け
             string responce = "";
             if (image != null)
             {
@@ -177,13 +209,13 @@ namespace ColorBath
                 responce = await SendPrompt(prompt);
             }
 
+            // 応答から必要な部分を取り出す。
             if (!string.IsNullOrEmpty(responce))
             {
                 try
                 {
                     // JSONとしてパースを試みる
                     string responceText = GetResponceText(responce);
-                    Debug.Log(responceText);
                     return responceText;
                 }
                 catch (JsonException e)
@@ -199,10 +231,11 @@ namespace ColorBath
             }
         }
 
+        // テーマ決定用のラッパー
         public async Task<string> SendThemeDecidePrompt(string[] recentThemes)
         {
+            // 過去数日分のテーマを教えることで、テーマかぶりを避ける
             string themesString = "[" + string.Join(",", recentThemes.Select(t => $"\"{t}\"")) + "]";
-            Debug.Log("以前のテーマ"+themesString);
             string prompt =
             $@"私はカラーバスを行っています。
             これは、毎日抽象的で簡単なテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につながります。
@@ -220,9 +253,11 @@ namespace ColorBath
 
             JSON形式以外での応答を行わないでください。
             ";
+
             string responce;
             responce = await SendPrompt(prompt);
-            Debug.Log(responce);
+
+            // 返答から必要な部分のみ取り出す
             if(!string.IsNullOrEmpty(responce))
             {
                 try

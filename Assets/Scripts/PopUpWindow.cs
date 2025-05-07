@@ -18,6 +18,7 @@ namespace ColorBath
 
         void Start()
         {
+            // OKボタンの処理をセット
             _okButton.onClick.AddListener(OnOkButtonClicked);
         }
 
@@ -41,9 +42,10 @@ namespace ColorBath
             return _inputField.text; 
         }
 
+        // OKボタン押下時の処理
         private void OnOkButtonClicked()
         {
-            if (_inputField.gameObject.activeSelf)
+            if (_inputField.gameObject.activeSelf)// ユーザ入力を受け取る場合
             {
                 string inputValue = GetTextFormInput();
                 Debug.Log("入力"+inputValue);
@@ -68,6 +70,7 @@ namespace ColorBath
             _inputField.gameObject.SetActive(true);
         }
 
+        // ポップアップウィンドウを閉じる際のコールバック関数を設定
         public void SetOnOkCallback(System.Action<string> callback)
         {
             _onOkCallback = callback;
