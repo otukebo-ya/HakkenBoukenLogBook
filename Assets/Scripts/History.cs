@@ -8,10 +8,9 @@ namespace ColorBath
     [System.Serializable]
     public class History
     {
-        public DateTime Date;
-        public string Theme;
-        public Discovery[] Discoveries;
-        public string Review;
-        public bool Reviewed;
+        public DateTime Date;// 履歴の日付
+        public string Theme;// その日のテーマ
+        public Discovery[] Discoveries;// その日の発見たち
+        public string Review;// その日の発見に対するレビュー
     }
 }

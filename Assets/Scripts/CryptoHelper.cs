@@ -9,9 +9,11 @@ namespace ColorBath
 {
     public static class CryptoHelper
     {
+        // é©óRÇ…åàíËÇµÇÊÇ§
         private static readonly string key = "m6p9scuuyb37kkzif27gzrm27szkshee"; // 32ï∂éö
         private static readonly string iv = "c4tmcwja7p9jb8en"; // 16ï∂éö
 
+        // à√çÜÇ…Ç∑ÇÈ
         public static string Encrypt(string plainText)
         {
             using (Aes aes = Aes.Create())
@@ -27,6 +29,7 @@ namespace ColorBath
             }
         }
 
+        // å≥Ç…ñﬂÇ∑
         public static string Decrypt(string encryptedText)
         {
             using (Aes aes = Aes.Create())

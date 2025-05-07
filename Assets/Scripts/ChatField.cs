@@ -33,6 +33,7 @@ namespace ColorBath
             StartCoroutine(ScrollToBottomNextFrame());
         }
 
+        // 最新のやり取りが表示されるように、チャット画面の一番下へスクロール
         private IEnumerator ScrollToBottomNextFrame()
         {
             yield return null;
@@ -48,6 +49,8 @@ namespace ColorBath
             StartCoroutine(ScrollToBottomNextFrame());
         }
 
+        // ユーザの発見メモを表示(オーバロードあり)
+        // 画像がイメージパスで与えられる場合
         public void PrintDiscovery(string message, string imagePath ="")
         {
             GameObject newDiscoveryHukidashi = Instantiate(_discoveryHukidashi, _chatFieldContent);
@@ -59,6 +62,8 @@ namespace ColorBath
             StartCoroutine(ScrollToBottomNextFrame());
         }
 
+        // ユーザの発見メモを表示（オーバロードあり）
+        // 画像がテクスチャで与えられる場合
         public void PrintDiscovery(string message, Texture2D texture)
         {
             GameObject newDiscoveryHukidashi = Instantiate(_discoveryHukidashi, _chatFieldContent);
@@ -83,7 +88,9 @@ namespace ColorBath
                 text.text = message;
             }
         }
-        
+
+        // 画像を吹き出しにセット（オーバロードあり）
+        // 画像のパスが与えられた場合
         private void SetHukidashiImage(string imagePath, GameObject hukidashiInstance)
         {
             if (!File.Exists(imagePath))
@@ -92,6 +99,7 @@ namespace ColorBath
                 return;
             }
 
+            // 
             byte[] imageBytes = File.ReadAllBytes(imagePath);
             Texture2D texture = new Texture2D(2, 2);
             Image targetImage = hukidashiInstance.transform.Find("Hukidashi/Image").GetComponent<Image>();
@@ -128,6 +136,8 @@ namespace ColorBath
             }
         }
 
+        // 画像を吹き出しにセット（オーバロードあり）
+        // 画像のテクスチャが与えられた場合
         private void SetHukidashiImage(Texture2D texture, GameObject hukidashiInstance)
         {
             Image targetImage = hukidashiInstance.transform.Find("Hukidashi/Image").GetComponent<Image>();
@@ -157,6 +167,7 @@ namespace ColorBath
             layout.minHeight = 0;
         }
 
+        // その日に、すでに行われている発見を一気に並べる
         public void LineUpTodayDiscoveries(Discovery[] discoveries)
         {
             for (int i = 0; i < discoveries.Length; i++)

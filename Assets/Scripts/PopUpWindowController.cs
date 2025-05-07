@@ -10,8 +10,6 @@ namespace ColorBath{
 
         public static PopUpWindowController Instance;
         
-
-        // Start is called before the first frame update
         void Awake()
         {
             if (Instance == null)
@@ -27,6 +25,7 @@ namespace ColorBath{
             _window.SetActive(false);
         }
 
+        // ポップアップウィンドウの表示
         public void PopUp(string title, string mainText, string errorText = "", bool withoutInputField = false, System.Action<string> onOk = null)
         {
             // <TODO>アニメーションつける
@@ -49,9 +48,9 @@ namespace ColorBath{
             _windowScript.SetOnOkCallback(onOk);
         }
 
+        // ウィンドウの非表示
         public void Close()
         {
-            Debug.Log("windowを閉じるよ");
             // <TODO>アニメーションつける
 
             _window.SetActive(false);
