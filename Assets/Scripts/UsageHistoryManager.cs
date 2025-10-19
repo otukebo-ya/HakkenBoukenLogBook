@@ -36,10 +36,10 @@ namespace ColorBath
         // 今日のテーマを取得
         public string GetTodayTheme()
         {
-
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
-            string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
+            string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
+            string[] files = Directory.GetFiles(historyPath, $"{todaysFileName}");
             return (files.Length > 0) ? GetTheme(files[0]) : "";
         }
 
@@ -47,7 +47,8 @@ namespace ColorBath
         public Discovery[]? GetTodayDiscoveries() {
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
-            string[] files = Directory.GetFiles(Application.persistentDataPath, $"{todaysFileName}");
+            string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
+            string[] files = Directory.GetFiles(historyPath, $"{todaysFileName}");
             return (files.Length > 0) ? GetDiscoveries(files[0]) : null;
         }
 
@@ -88,9 +89,10 @@ namespace ColorBath
                 Directory.CreateDirectory(historyPath);
             }
             string[] files = Directory.GetFiles(historyPath, "*.json");
+            Debug.Log($"LoadRecentThemes: historyPath={historyPath}, filesCount={files.Length}");
             if (files.Length == 0)
             {
-                Debug.Log("HistoryフォルダにJSONファイルがありません");
+                Debug.Log("HistoryフォルダにJSONファイルがありません\n" + historyPath);
                 return new string[0];
             }
 
@@ -109,11 +111,74 @@ namespace ColorBath
             return recentThemes;
         }
 
+        // Historiesをロードする
+        public History[] LoadRecentHistories()
+        {
+            string historyPath = Path.Combine(Application.persistentDataPath, "Histories");
+            if (!Directory.Exists(historyPath))
+            {
+                Directory.CreateDirectory(historyPath);
+            }
+
+            string[] files = Directory.GetFiles(historyPath, "*.json");
+            Debug.Log($"LoadRecentHistories: historyPath={historyPath}, filesCount={files.Length}");
+
+            if (files.Length == 0)
+            {
+                Debug.Log("HistoryフォルダにJSONファイルがありません\n" + historyPath);
+                return new History[0];
+            }
+
+            History[] recentHistories = files
+                .Select(file => new
+                {
+                    FileName = file,
+                    Date = JsonFileName2Date(Path.GetFileName(file))
+                })
+                .Where(file => file.Date.HasValue)
+                .OrderByDescending(file => file.Date)
+                .Take(NUMBER_OF_FILES)
+                .Select(file => GetHistory(file.FileName))
+                .Where(history => history != null)
+                .ToArray();
+
+            return recentHistories;
+        }
+
+
         // 特定のファイルからテーマを取得
         private string GetTheme(string path)
         {
             History? history = GetHistory(path);
-            return history?.Theme ?? "";
+            if (history != null && !string.IsNullOrEmpty(history.Theme))
+            {
+                return history.Theme;
+            }
+
+            // フォールバック: JSON を直接読み込み、Theme または theme フィールドを探す
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    return "";
+                }
+
+                string json = File.ReadAllText(path);
+                var jo = JObject.Parse(json);
+                // 大文字小文字の可能性に備えて両方確認
+                JToken? t = jo["Theme"] ?? jo["theme"];
+                if (t != null)
+                {
+                    string s = t.ToString().Trim();
+                    return s;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"GetTheme fallback parse failed for {path}: {ex.Message}");
+            }
+
+            return "";
         }
 
         // 特定のファイルから発見を取得
@@ -133,7 +198,10 @@ namespace ColorBath
                 //string json = CryptoHelper.Decrypt(encryptedJson);
 
                 string json = File.ReadAllText(path);
-                return JsonConvert.DeserializeObject<History>(json);
+                History history = JsonConvert.DeserializeObject<History>(json);
+                history.Date = JsonFileName2Date(Path.GetFileName(path)) ?? history.Date;
+
+                return history;
             }
             catch (Exception ex)
             {
@@ -142,16 +210,30 @@ namespace ColorBath
             }
         }
 
+        // 特定のファイルから履歴を取得(オーバーロード)
+        public History? GetHistory(DateTime date)
+        {
+            string fileName = Date2JsonFileName(date, "history");
+            string path = Path.Combine(Application.persistentDataPath, "Histories",fileName);
+            Debug.Log(path);
+            // 暗号化する場合
+            //string encryptedJson = File.ReadAllText(path);
+            //string json = CryptoHelper.Decrypt(encryptedJson);
+
+            string json = File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<History>(json);
+            
+        }
+
         // その日の記録を行うファイルを作成
         public void MakeTodaysFile(string theme)
         {
-            string todaysPath = MakeTodaysHistoryPath();
-            string path = Path.Combine(Application.persistentDataPath, todaysPath);
+            string path = MakeTodaysHistoryPath();
             History history = new History();
             history.Theme = theme;
             history.Date = DateTime.Today;
             string json = JsonUtility.ToJson(history);
-            
+
             //暗号化する場合
             //string encrypted = CryptoHelper.Encrypt(json);
             //File.WriteAllText(path, encrypted);
@@ -215,7 +297,12 @@ namespace ColorBath
         {
             DateTime today = DateTime.Today;
             string todaysFileName = Date2JsonFileName(today, "history");
-            string path = Path.Combine(Application.persistentDataPath, todaysFileName);
+            string historyDir = Path.Combine(Application.persistentDataPath, "Histories");
+            if (!Directory.Exists(historyDir))
+            {
+                Directory.CreateDirectory(historyDir);
+            }
+            string path = Path.Combine(historyDir, todaysFileName);
             return path;
         }
 
@@ -234,9 +321,12 @@ namespace ColorBath
         // Jsonファイル名　＝＞　日付
         private DateTime? JsonFileName2Date(string fileName)
         {
-            var datePart = fileName.Substring(fileName.LastIndexOf('_') + 1).Replace(".json", "");
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
 
-            if (DateTime.TryParse(datePart, out DateTime date))
+            var parts = nameWithoutExt.Split('_');
+            string datePart = $"{parts[1]}_{parts[2]}_{parts[3]}";
+            // ファイル名は yyyy_MM_dd 形式で保存しているので、その形式でパースする
+            if (DateTime.TryParseExact(datePart, "yyyy_MM_dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
             {
                 return date;
             }

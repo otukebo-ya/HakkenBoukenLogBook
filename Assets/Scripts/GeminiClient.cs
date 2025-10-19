@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 
-
 namespace ColorBath
 {
     public class GeminiClient
@@ -27,14 +26,14 @@ namespace ColorBath
         private string _backbone;
         private string _todayTheme;
         private float _temperature = 2.0f;// GeminiAPIの回答のランダム性
-        private int _top_k = 40;// ランダム性にかかわるパラメータ
-        private float _top_p = 1.0f;// ランダム性にかかわるパラメータ
+        private int _top_k = 100;// ランダム性にかかわるパラメータ
+        private float _top_p = 0.9f;// ランダム性にかかわるパラメータ
         private string _apiEndpoint = "";
         private string token = "";
         private GeminiClient()
         {
             token = UserData.Token;
-            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + token;
+            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + token;
         }
 
         // キャラ付けと、やっていることをGeminiAPIに教えるためのプロンプト
@@ -49,7 +48,7 @@ namespace ColorBath
             顔文字は使わないようにしましょう。
             ＜私の設定＞
             私はカラーバスを行っています。
-            毎日抽象的で簡単なテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につなげます。
+            日ごとにテーマを設定し、それに該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につなげます。
             "; 
         }
 
@@ -169,7 +168,7 @@ namespace ColorBath
             $@"
             ＜タスク＞
             今から、私がテーマに沿って発見したものとそれに対するあなたの相槌のログを教えます。
-　　　　　　私の発見について、簡単に総括を行ったうえで、
+            私の発見について、簡単に総括を行ったうえで、
             レビューを行ってください。
             内容はポジティブだといいな。
             文字数は200字以内とします。
@@ -190,9 +189,11 @@ namespace ColorBath
             {_backbone}\n
             ＜タスク＞
             今から、私の発見したものをテキスト形式であなたに渡します。
-            あなたはそれを確認し、私のその発見に対する相槌やレビューを行ってください。
+            あなたはそれを確認し、私のその発見に対する相槌を行ってください。
             文字数は100文字以内とします。
-            本日のカラーバスのテーマは{_todayTheme}です。
+            本日のカラーバスのテーマは{_todayTheme}なので、そのことを踏まえた相槌を行ってください。
+            カラーバスを行うことは当たり前なので、”カラーバス頑張っているのね”のような、カラーバスの取り組んでいることについての言及を行わないでください。
+            文字数がもったいないので。
             ＜入力＞
             {input}
             ";
@@ -234,25 +235,34 @@ namespace ColorBath
         // テーマ決定用のラッパー
         public async Task<string> SendThemeDecidePrompt(string[] recentThemes)
         {
+            // ランダム要素を入れて、固定化を防ぐ
+            string randomizer = Guid.NewGuid().ToString();
             // 過去数日分のテーマを教えることで、テーマかぶりを避ける
             string themesString = "[" + string.Join(",", recentThemes.Select(t => $"\"{t}\"")) + "]";
             string prompt =
-            $@"私はカラーバスを行っています。
-            これは、毎日抽象的で簡単なテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につながります。
-            ここ数日間のテーマは以下の通りです。
-            {themesString}
-            これらのテーマとはかぶらないように、本日探すべきテーマをランダムに一つ決めてしてください。
-            テーマは色、形、質感、擬音、その他様々なバリエーションから決定してください。
-            テーマは該当する範囲が狭くなりすぎないように、抽象的かつ、簡潔な表現にしてください。
-            複数の表現を組み合わされると該当するモノが減り困ります。
-            また、時間帯や土地名などは、その場にいないといけないので困るから選ばないように。
-            必ず応答は以下の形式のJSON形式であることを守ってください。
+            $@"
+            ## タスク
+            私はカラーバスを行っているよ。
+            これは、日によって異なるさまざまなテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につながるんだ。
+            ここ数日間のテーマはthemesに記述するかも。でも、ここ数日のテーマはない場合もあるよ！
+            過去テーマと被らないほうがいいね。
+            本日探すべきテーマを単語としてランダムに選んでほしいな。
+            色、形、質感、擬音、感覚、抽象概念、そのほかいろんなジャンルがあるよね。
+            あなたには自由に様々なジャンルからユニークなものを選んでほしいね。
+            テーマは抽象的だと、あてはまるものが多くなってカラーバスが楽しくなるな～。
+            
+            ## 応答の形式
             {{
-                  ""theme"": ""提案するテーマ""
+                [""theme"": ""提案するテーマ""]
             }}
 
-            JSON形式以外での応答を行わないでください。
+            ## themas（過去数日間のテーマ）ないこともある
+            {themesString}
+
+            ## randomizer（発想にもちいる乱数）
+            {randomizer}
             ";
+            Debug.Log(themesString);
 
             string responce;
             responce = await SendPrompt(prompt);
