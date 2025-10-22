@@ -90,7 +90,6 @@ namespace ColorBath
             string[] recentThemes = UsageHistoryManager.Instance.LoadRecentThemes();
             Theme = await GeminiClient.Instance.SendThemeDecidePrompt(recentThemes);
 
-
             // ポップアップ表示
             PopUpWindowController.Instance.PopUp(
                 title: "今日の発見を始めるよ！",

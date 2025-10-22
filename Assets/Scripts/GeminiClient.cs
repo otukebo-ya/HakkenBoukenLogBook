@@ -33,7 +33,7 @@ namespace ColorBath
         private GeminiClient()
         {
             token = UserData.Token;
-            _apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + token;
+            _apiEndpoint = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + token;
         }
 
         // キャラ付けと、やっていることをGeminiAPIに教えるためのプロンプト
@@ -54,7 +54,7 @@ namespace ColorBath
 
         // プロンプトの送信（オーバロードあり）
         // 画像がない場合の処理
-        private async Task<string> SendPrompt(string prompt)
+        private async Task<string> SendPrompt(string prompt, int maxRetries = 3, float retryDelaySeconds = 2f)
         {
             // リクエストデータをJsonに
             var requestData = new
@@ -72,26 +72,44 @@ namespace ColorBath
             };
             string json = JsonConvert.SerializeObject(requestData);
 
+            int attempt = 0;
 
-            // APIにポストを行う
-            using (UnityWebRequest www = new UnityWebRequest(_apiEndpoint, "POST"))
+            while (attempt < maxRetries)
             {
-                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-                www.uploadHandler = new UploadHandlerRaw(bodyRaw);
-                www.downloadHandler = new DownloadHandlerBuffer();
-                www.SetRequestHeader("Content-Type", "application/json");// 回答をJson形式に指定
-                await www.SendWebRequestAsync();
+                attempt++;
 
-                if (www.result != UnityWebRequest.Result.Success)
+                using (UnityWebRequest www = new UnityWebRequest(_apiEndpoint, "POST"))
                 {
-                    Debug.LogError($"Gemini API Error: {www.error}");
-                    return "";
-                }
-                else
-                {
-                    return www.downloadHandler.text;
+                    byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+                    www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                    www.downloadHandler = new DownloadHandlerBuffer();
+                    www.SetRequestHeader("Content-Type", "application/json");
+
+                    await www.SendWebRequestAsync();
+
+                    if (www.result == UnityWebRequest.Result.Success)
+                    {
+                        return www.downloadHandler.text;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Gemini API Error (attempt {attempt}/{maxRetries}): {www.error}");
+
+                        if (attempt < maxRetries)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+                            continue; // 再試行
+                        }
+                        else
+                        {
+                            Debug.LogError($"Gemini API failed after {maxRetries} attempts: {www.error}");
+                            return "";
+                        }
+                    }
                 }
             }
+
+            return ""; // 最終的に失敗した場合
         }
 
         // プロンプトの送信（オーバロードあり）
@@ -246,8 +264,8 @@ namespace ColorBath
             これは、日によって異なるさまざまなテーマを設定し、該当するモノをたくさん探すことで、身の回りのモノへの意識を高まり、発想力の強化につながるんだ。
             ここ数日間のテーマはthemesに記述するかも。でも、ここ数日のテーマはない場合もあるよ！
             過去テーマと被らないほうがいいね。
-            本日探すべきテーマを単語としてランダムに選んでほしいな。
-            色、形、質感、擬音、感覚、抽象概念、そのほかいろんなジャンルがあるよね。
+            本日探すべき視覚的なテーマを単語としてランダムに選んでほしいな。
+            色、形、質感、擬音、感覚、そのほかいろんなジャンルがあるよね。
             あなたには自由に様々なジャンルからユニークなものを選んでほしいね。
             テーマは抽象的だと、あてはまるものが多くなってカラーバスが楽しくなるな～。
             
