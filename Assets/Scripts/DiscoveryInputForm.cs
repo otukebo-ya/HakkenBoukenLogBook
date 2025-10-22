@@ -41,7 +41,7 @@ namespace ColorBath
         private async Task SendButtonClicked()
         {
             string inputText = GetTextFormInput();
-
+            if(inputText == "") return ;
             string aizuchi = "";
             if (_captuedTexture is null) // ‰æ‘œ‚ª‚È‚¢ê‡
             {
