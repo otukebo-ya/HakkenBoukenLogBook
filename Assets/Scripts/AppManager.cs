@@ -26,10 +26,18 @@ namespace ColorBath
             }
         }
 
-        void Start()
+        private async void Start()
         {
-            Initialize().Forget();
+            try
+            {
+                await Initialize();
+            }
+            catch(Exception ex)
+            {
+                Debug.LogError($"Initialize failed: {ex}");
+            }
         }
+
 
         async Task Initialize()
         {
