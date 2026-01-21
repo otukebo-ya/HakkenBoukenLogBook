@@ -64,13 +64,15 @@ namespace ColorBath
 
                 if (!isReviewed)
                 {
+                    await Task.Delay(2000);
                     // レビューのポップアップ
                     await Review(latestHistory);
                 }
             }
 
             // GeminiAPIの初期化
-            GeminiClient.Instance.SetBackBone(Theme);
+            GeminiClient.Instance.SetTodayTheme(Theme);
+            GeminiClient.Instance.SetBackBone();
 
             // 画面上に今日のテーマと、これまでの発見を記述
             UIDirector.Instance.SetTodaysTheme(Theme);
