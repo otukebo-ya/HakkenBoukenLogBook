@@ -93,7 +93,7 @@ namespace ColorBath
             {
                 if (attempt > 0)
                 {
-                    await Task.Delay((int)(retryDelaySeconds * 1000));
+                    await Task.Delay((int)(retryDelaySeconds));
                 }
                 attempt++;
                 

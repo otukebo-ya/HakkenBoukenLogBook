@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
 
 namespace ColorBath
 {
@@ -12,6 +15,7 @@ namespace ColorBath
         private int _imageHeight;
         [SerializeField] private RawImage _rawImage;
         [SerializeField] private Button _captureButton;
+        [SerializeField] private Button _ReturnButton;
 
         WebCamTexture webCamTexture;
         private string _capturedImagePath;
@@ -23,11 +27,21 @@ namespace ColorBath
         {
             // 撮影を行うためのボタン
             _captureButton.onClick.AddListener(OnCaptureButtonClicked);
+            _ReturnButton.onClick.AddListener(CameraOff);
         }
 
         public void CameraOn()
         {
+            if(!CamPermission()) return;
+            UIDirector.Instance.SetCamImage();
+
             devices = WebCamTexture.devices;
+
+            if (devices.Length == 0)
+            {
+                Debug.LogError("カメラが見つかりません");
+                return;
+            }
 
             webCamTexture = new WebCamTexture(devices[0].name);
             _rawImage.texture = webCamTexture;
@@ -38,7 +52,7 @@ namespace ColorBath
             _imageHeight = webCamTexture.height;
 
             // カメラ映像がスマホ画面に収まるよう調整
-            AdjustRawImage();
+            StartCoroutine(WaitCameraInit());
         }
 
         public void CameraOff()
@@ -49,6 +63,27 @@ namespace ColorBath
             }
 
             gameObject.SetActive(false);
+        }
+
+        // カメラ映像の表示
+        public bool CamPermission()
+        {
+#if UNITY_ANDROID
+            if (Application.platform != RuntimePlatform.Android) return true;
+
+            if (Permission.HasUserAuthorizedPermission(Permission.Camera))
+            {
+                return true;
+            }
+            else
+            {
+                Permission.RequestUserPermission(Permission.Camera);
+                return false;
+            }
+#else
+            // Android以外は権限チェックをスルー
+            return true;
+#endif
         }
 
         // スマホのサイズにカメラ映像を合わせる
@@ -110,6 +145,20 @@ namespace ColorBath
             _capturedImagePath = filePath;
             _capturedImage = photo;
             CameraOff();
+        }
+
+        private IEnumerator WaitCameraInit()
+        {
+            // カメラの準備ができるまで待機（初期値16より大きくなるまで）
+            while (webCamTexture.width <= 16)
+            {
+                yield return null;
+            }
+
+            // 準備ができたらサイズ調整を実行
+            _imageWidth = webCamTexture.width;
+            _imageHeight = webCamTexture.height;
+            AdjustRawImage();
         }
 
         // 画像をほかのアプリでも見れるように

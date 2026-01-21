@@ -29,7 +29,6 @@ namespace ColorBath
 
         void Start()
         {
-            _camButton.onClick.AddListener(UIDirector.Instance.DeviceCamOn);
             StartCoroutine(ScrollToBottomNextFrame());
         }
 

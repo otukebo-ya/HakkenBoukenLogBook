@@ -48,7 +48,7 @@ namespace ColorBath
             {
                 UserData.Token = await UIDirector.Instance.RequestTokenInput();
             }
-
+            
             // ¡“ú‚Ìƒe[ƒ}‚ğæ“¾
             Theme = UsageHistoryManager.Instance.GetTodayTheme();
 

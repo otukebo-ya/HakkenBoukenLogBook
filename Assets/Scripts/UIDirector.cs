@@ -60,12 +60,8 @@ namespace ColorBath
             return token;
         }
 
-        // カメラ映像の表示
-        public void DeviceCamOn()
-        {
+        public void SetCamImage(){
             camImage.SetActive(true);
-            DeviceCam camScript = camImage.GetComponent<DeviceCam>();
-            camScript.CameraOn();
         }
 
         // 今日のテーマを表示

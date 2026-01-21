@@ -23,6 +23,7 @@ namespace ColorBath{
 
             _windowScript = _window.GetComponent<PopUpWindow>();
             _window.SetActive(false);
+            _windowShadow.SetActive(false);
         }
 
         // ポップアップウィンドウの表示

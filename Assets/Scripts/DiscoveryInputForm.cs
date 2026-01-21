@@ -20,6 +20,7 @@ namespace ColorBath
         [SerializeField] private RawImage _capturedImage;
         [SerializeField] private string _capturedImagePath;
         [SerializeField] public Button CameraButton;
+        [SerializeField] private DeviceCam _deviceCam;
         [SerializeField] private Button _sendButton;
 
         void Awake()
@@ -35,6 +36,10 @@ namespace ColorBath
 
             // 撮影した画像を表示する場所を非表示にしておく
             _capturedImage.gameObject.SetActive(false);
+        }
+        void Start()
+        {
+            CameraButton.onClick.AddListener(_deviceCam.CameraOn);
         }
 
         // 送信ボタンの処理
