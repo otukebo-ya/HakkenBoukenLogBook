@@ -65,6 +65,11 @@ namespace ColorBath
             gameObject.SetActive(false);
         }
 
+        private void Update()
+        {
+            if(webCamTexture.didUpdateThisFrame && webCamTexture.width > 100) AdjustRawImage();
+        }
+
         // カメラ映像の表示
         public bool CamPermission()
         {
@@ -111,12 +116,15 @@ namespace ColorBath
             // 画像データの配置を初期化
             RectTransform rt = _rawImage.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(width, height);
-            rt.anchorMin = new Vector2(0.5f, 1.0f);
-            rt.anchorMax = new Vector2(0.5f, 1.0f);
-            rt.pivot = new Vector2(0.5f, 1.0f);
-            rt.anchoredPosition = new Vector2(0, -100f);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(0, 0);
 
             rt.localEulerAngles = new Vector3(0, 0, -webCamTexture.videoRotationAngle);
+
+            float scaleY = webCamTexture.videoVerticallyMirrored ? -1.0f : 1.0f;
+            rt.localScale = new Vector3(1.0f, scaleY, 1.0f);
         }
 
         // 撮影ボタンの処理
